@@ -176,6 +176,77 @@
       text-align: center;
     }
 
+    .celebration {
+      position: fixed;
+      z-index: 10;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgb(37 25 89 / 88%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .celebration.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .celebration-card {
+      width: min(100%, 560px);
+      padding: clamp(32px, 8vw, 64px) clamp(24px, 7vw, 58px);
+      border: 1px solid rgb(255 255 255 / 55%);
+      border-radius: 28px;
+      background: linear-gradient(140deg, #ffdb70 0%, #ff8f70 48%, #ec5bd2 100%);
+      color: #3a195f;
+      text-align: center;
+      box-shadow: 0 25px 90px rgb(22 9 70 / 45%);
+      transform: translateY(18px) scale(0.97);
+      transition: transform 260ms ease;
+    }
+
+    .celebration.visible .celebration-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .celebration-icon {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 3.5rem;
+    }
+
+    .celebration h2 {
+      margin: 0;
+      font-size: clamp(2rem, 6vw, 3.4rem);
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .celebration-quote {
+      margin: 20px auto 28px;
+      max-width: 430px;
+      color: #542a6e;
+      font-size: 1.08rem;
+      font-weight: 600;
+      line-height: 1.6;
+    }
+
+    .continue-button {
+      border-radius: 999px;
+      padding: 13px 28px;
+      background: #3a195f;
+      color: #fff;
+      font-weight: 800;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .continue-button:hover {
+      box-shadow: 0 8px 20px rgb(58 25 95 / 25%);
+      transform: translateY(-2px);
+    }
+
     @media (max-width: 520px) {
       .app-shell {
         padding: 30px 0;
@@ -209,13 +280,62 @@
     <ul class="task-list" id="task-list"></ul>
   </main>
 
+  <section class="celebration" id="celebration" role="dialog" aria-modal="true" aria-labelledby="celebration-title" aria-hidden="true">
+    <div class="celebration-card">
+      <span class="celebration-icon" aria-hidden="true">✨</span>
+      <h2 id="celebration-title">You did it!</h2>
+      <p class="celebration-quote" id="celebration-quote"></p>
+      <button class="continue-button" id="continue-button" type="button">Continue</button>
+    </div>
+  </section>
+
   <script>
     const taskForm = document.querySelector("#task-form");
     const taskInput = document.querySelector("#task-input");
     const taskList = document.querySelector("#task-list");
     const completedCounter = document.querySelector("#completed-counter");
+    const celebration = document.querySelector("#celebration");
+    const celebrationQuote = document.querySelector("#celebration-quote");
+    const continueButton = document.querySelector("#continue-button");
 
     let tasks = [];
+    let previousQuote = "";
+
+    const motivationalQuotes = [
+      "The secret of getting ahead is getting started.",
+      "Great things are done by a series of small things brought together.",
+      "You do not have to be perfect to make progress.",
+      "Success is the sum of small efforts, repeated day in and day out.",
+      "It always seems impossible until it is done.",
+      "Start where you are. Use what you have. Do what you can.",
+      "Action is the foundational key to all success.",
+      "The future depends on what you do today.",
+      "Believe you can and you're halfway there.",
+      "Focus on being productive instead of busy.",
+      "A little progress each day adds up to big results.",
+      "Well begun is half done.",
+      "Your only limit is your mind.",
+      "Dream big. Start small. Act now.",
+      "The best way out is always through.",
+      "Do something today that your future self will thank you for.",
+      "Discipline is choosing between what you want now and what you want most."
+    ];
+
+    function showCelebration() {
+      const availableQuotes = motivationalQuotes.filter((quote) => quote !== previousQuote);
+      const quote = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
+      previousQuote = quote;
+      celebrationQuote.textContent = `"${quote}"`;
+      celebration.classList.add("visible");
+      celebration.setAttribute("aria-hidden", "false");
+      continueButton.focus();
+    }
+
+    function hideCelebration() {
+      celebration.classList.remove("visible");
+      celebration.setAttribute("aria-hidden", "true");
+      taskInput.focus();
+    }
 
     function updateCounter() {
       const completedTasks = tasks.filter((task) => task.completed).length;
@@ -278,6 +398,9 @@
 
       task.completed = !task.completed;
       renderTasks();
+      if (task.completed) {
+        showCelebration();
+      }
     }
 
     function deleteTask(taskId) {
@@ -296,6 +419,13 @@
       addTask(text);
       taskInput.value = "";
       taskInput.focus();
+    });
+
+    continueButton.addEventListener("click", hideCelebration);
+    celebration.addEventListener("click", (event) => {
+      if (event.target === celebration) {
+        hideCelebration();
+      }
     });
 
     renderTasks();
