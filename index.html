@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus List</title>
+  <style>
+    :root {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1d2733;
+      background: #f4f7fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f4f7fb;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app-shell {
+      width: min(100% - 32px, 760px);
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+
+    .dashboard {
+      margin-bottom: 28px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #6b63d9;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      color: #18212d;
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .dashboard-copy {
+      margin: 14px 0 0;
+      color: #667085;
+      font-size: 1.05rem;
+    }
+
+    .counter {
+      display: inline-flex;
+      margin-top: 20px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: #e8e7ff;
+      color: #4f46b8;
+      font-weight: 800;
+    }
+
+    .task-form {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .task-input {
+      min-width: 0;
+      flex: 1;
+      border: 1px solid #dfe4ec;
+      border-radius: 14px;
+      padding: 15px 17px;
+      outline: none;
+      background: #fff;
+      color: #1d2733;
+      box-shadow: 0 8px 26px rgb(35 45 70 / 6%);
+    }
+
+    .task-input:focus {
+      border-color: #7269df;
+      box-shadow: 0 0 0 4px rgb(114 105 223 / 15%);
+    }
+
+    .add-button {
+      border-radius: 14px;
+      padding: 0 22px;
+      background: #5b52c6;
+      color: #fff;
+      font-weight: 800;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .add-button:hover {
+      background: #4840ac;
+      transform: translateY(-2px);
+    }
+
+    .task-list {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-height: 66px;
+      padding: 14px 16px;
+      border: 1px solid #e6eaf0;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 8px 26px rgb(35 45 70 / 5%);
+    }
+
+    .task-checkbox {
+      width: 21px;
+      height: 21px;
+      flex: 0 0 auto;
+      accent-color: #5b52c6;
+      cursor: pointer;
+    }
+
+    .task-text {
+      flex: 1;
+      overflow-wrap: anywhere;
+      color: #263445;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .task-item.completed .task-text {
+      color: #98a2b3;
+      text-decoration: line-through;
+    }
+
+    .delete-button {
+      flex: 0 0 auto;
+      padding: 8px;
+      border-radius: 9px;
+      background: transparent;
+      color: #98a2b3;
+      font-size: 1.15rem;
+      line-height: 1;
+      transition: background 160ms ease, color 160ms ease;
+    }
+
+    .delete-button:hover {
+      background: #fff0f0;
+      color: #d04444;
+    }
+
+    .empty-state {
+      padding: 34px 20px;
+      border: 1px dashed #d6dce7;
+      border-radius: 16px;
+      color: #7d8798;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .app-shell {
+        padding: 30px 0;
+      }
+
+      .task-form {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .add-button {
+        min-height: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="dashboard">
+      <p class="eyebrow">Daily momentum</p>
+      <h1>Focus List</h1>
+      <p class="dashboard-copy">Small steps, steady progress, one clear list.</p>
+      <div class="counter" id="completed-counter">Completed: 0</div>
+    </header>
+
+    <form class="task-form" id="task-form">
+      <input class="task-input" id="task-input" type="text" placeholder="What needs to get done?" aria-label="New task" autocomplete="off">
+      <button class="add-button" type="submit">Add Task</button>
+    </form>
+
+    <ul class="task-list" id="task-list"></ul>
+  </main>
+
+  <script>
+    const taskForm = document.querySelector("#task-form");
+    const taskInput = document.querySelector("#task-input");
+    const taskList = document.querySelector("#task-list");
+    const completedCounter = document.querySelector("#completed-counter");
+
+    let tasks = [];
+
+    function updateCounter() {
+      const completedTasks = tasks.filter((task) => task.completed).length;
+      completedCounter.textContent = `Completed: ${completedTasks}`;
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = "";
+
+      if (tasks.length === 0) {
+        taskList.innerHTML = '<li class="empty-state">Your list is clear. Add your first task above.</li>';
+        updateCounter();
+        return;
+      }
+
+      tasks.forEach((task) => {
+        const taskItem = document.createElement("li");
+        taskItem.className = `task-item${task.completed ? " completed" : ""}`;
+        taskItem.dataset.taskId = task.id;
+
+        const checkbox = document.createElement("input");
+        checkbox.className = "task-checkbox";
+        checkbox.type = "checkbox";
+        checkbox.checked = task.completed;
+        checkbox.setAttribute("aria-label", `Mark "${task.text}" as complete`);
+        checkbox.addEventListener("change", () => toggleTask(task.id));
+
+        const taskText = document.createElement("span");
+        taskText.className = "task-text";
+        taskText.textContent = task.text;
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-button";
+        deleteButton.type = "button";
+        deleteButton.setAttribute("aria-label", `Delete "${task.text}"`);
+        deleteButton.textContent = "×";
+        deleteButton.addEventListener("click", () => deleteTask(task.id));
+
+        taskItem.append(checkbox, taskText, deleteButton);
+        taskList.append(taskItem);
+      });
+
+      updateCounter();
+    }
+
+    function addTask(text) {
+      tasks.unshift({
+        id: crypto.randomUUID(),
+        text,
+        completed: false
+      });
+      renderTasks();
+    }
+
+    function toggleTask(taskId) {
+      const task = tasks.find((item) => item.id === taskId);
+      if (!task) {
+        return;
+      }
+
+      task.completed = !task.completed;
+      renderTasks();
+    }
+
+    function deleteTask(taskId) {
+      tasks = tasks.filter((task) => task.id !== taskId);
+      renderTasks();
+    }
+
+    taskForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const text = taskInput.value.trim();
+      if (!text) {
+        taskInput.focus();
+        return;
+      }
+
+      addTask(text);
+      taskInput.value = "";
+      taskInput.focus();
+    });
+
+    renderTasks();
+  </script>
+</body>
+</html>
