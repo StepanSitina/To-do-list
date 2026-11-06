@@ -9,6 +9,33 @@
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #1d2733;
       background: #f4f7fb;
+      --page-bg: #f4f7fb;
+      --surface: #fff;
+      --heading: #18212d;
+      --body-text: #263445;
+      --muted: #667085;
+      --border: #e6eaf0;
+      --input-border: #dfe4ec;
+      --accent-soft: #e8e7ff;
+      --accent-text: #4f46b8;
+      --shadow: rgb(35 45 70 / 6%);
+      --empty-border: #d6dce7;
+    }
+
+    :root[data-theme="dark"] {
+      color: #edf2f7;
+      background: #111827;
+      --page-bg: #111827;
+      --surface: #1d2939;
+      --heading: #f8fafc;
+      --body-text: #e5e7eb;
+      --muted: #aab4c3;
+      --border: #344054;
+      --input-border: #475467;
+      --accent-soft: #312e72;
+      --accent-text: #c7c4ff;
+      --shadow: rgb(0 0 0 / 20%);
+      --empty-border: #475467;
     }
 
     * {
@@ -18,7 +45,8 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background: #f4f7fb;
+      background: var(--page-bg);
+      transition: background-color 220ms ease, color 220ms ease;
     }
 
     button,
@@ -38,6 +66,7 @@
     }
 
     .dashboard {
+      position: relative;
       margin-bottom: 28px;
     }
 
@@ -52,7 +81,7 @@
 
     h1 {
       margin: 0;
-      color: #18212d;
+      color: var(--heading);
       font-size: clamp(2.2rem, 6vw, 3.8rem);
       letter-spacing: -0.06em;
       line-height: 1;
@@ -60,7 +89,7 @@
 
     .dashboard-copy {
       margin: 14px 0 0;
-      color: #667085;
+      color: var(--muted);
       font-size: 1.05rem;
     }
 
@@ -69,8 +98,8 @@
       margin-top: 20px;
       padding: 9px 14px;
       border-radius: 999px;
-      background: #e8e7ff;
-      color: #4f46b8;
+      background: var(--accent-soft);
+      color: var(--accent-text);
       font-weight: 800;
     }
 
@@ -83,13 +112,14 @@
     .task-input {
       min-width: 0;
       flex: 1;
-      border: 1px solid #dfe4ec;
+      border: 1px solid var(--input-border);
       border-radius: 14px;
       padding: 15px 17px;
       outline: none;
-      background: #fff;
-      color: #1d2733;
-      box-shadow: 0 8px 26px rgb(35 45 70 / 6%);
+      background: var(--surface);
+      color: var(--body-text);
+      box-shadow: 0 8px 26px var(--shadow);
+      transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, box-shadow 220ms ease;
     }
 
     .task-input:focus {
@@ -125,10 +155,11 @@
       gap: 13px;
       min-height: 66px;
       padding: 14px 16px;
-      border: 1px solid #e6eaf0;
+      border: 1px solid var(--border);
       border-radius: 16px;
-      background: #fff;
-      box-shadow: 0 8px 26px rgb(35 45 70 / 5%);
+      background: var(--surface);
+      box-shadow: 0 8px 26px var(--shadow);
+      transition: background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
     }
 
     .task-checkbox {
@@ -142,13 +173,13 @@
     .task-text {
       flex: 1;
       overflow-wrap: anywhere;
-      color: #263445;
+      color: var(--body-text);
       font-weight: 600;
       line-height: 1.45;
     }
 
     .task-item.completed .task-text {
-      color: #98a2b3;
+      color: var(--muted);
       text-decoration: line-through;
     }
 
@@ -170,10 +201,32 @@
 
     .empty-state {
       padding: 34px 20px;
-      border: 1px dashed #d6dce7;
+      border: 1px dashed var(--empty-border);
       border-radius: 16px;
-      color: #7d8798;
+      color: var(--muted);
       text-align: center;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--surface);
+      color: var(--body-text);
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 5px 16px var(--shadow);
+      transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, transform 160ms ease;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-2px);
     }
 
     .celebration {
@@ -270,6 +323,10 @@
       <h1>Focus List</h1>
       <p class="dashboard-copy">Small steps, steady progress, one clear list.</p>
       <div class="counter" id="completed-counter">Completed: 0</div>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode">
+        <span id="theme-icon" aria-hidden="true">☾</span>
+        <span id="theme-label">Dark mode</span>
+      </button>
     </header>
 
     <form class="task-form" id="task-form">
@@ -297,9 +354,14 @@
     const celebration = document.querySelector("#celebration");
     const celebrationQuote = document.querySelector("#celebration-quote");
     const continueButton = document.querySelector("#continue-button");
+    const themeToggle = document.querySelector("#theme-toggle");
+    const themeIcon = document.querySelector("#theme-icon");
+    const themeLabel = document.querySelector("#theme-label");
 
     let tasks = [];
     let previousQuote = "";
+    const tasksStorageKey = "focus-list-tasks";
+    const themeStorageKey = "focus-list-theme";
 
     const motivationalQuotes = [
       "The secret of getting ahead is getting started.",
@@ -320,6 +382,63 @@
       "Do something today that your future self will thank you for.",
       "Discipline is choosing between what you want now and what you want most."
     ];
+
+    function saveTasks() {
+      try {
+        localStorage.setItem(tasksStorageKey, JSON.stringify(tasks));
+      } catch (error) {
+        console.error("Unable to save tasks to localStorage.", error);
+      }
+    }
+
+    function loadTasks() {
+      try {
+        const savedTasks = localStorage.getItem(tasksStorageKey);
+        if (!savedTasks) {
+          return;
+        }
+
+        const parsedTasks = JSON.parse(savedTasks);
+        if (!Array.isArray(parsedTasks) || parsedTasks.some((task) => (
+          typeof task.id !== "string"
+          || typeof task.text !== "string"
+          || typeof task.completed !== "boolean"
+        ))) {
+          throw new Error("Saved task data has an invalid format.");
+        }
+        tasks = parsedTasks;
+      } catch (error) {
+        console.error("Unable to load tasks from localStorage.", error);
+        tasks = [];
+      }
+    }
+
+    function applyTheme(theme) {
+      const isDark = theme === "dark";
+      document.documentElement.dataset.theme = isDark ? "dark" : "light";
+      themeIcon.textContent = isDark ? "☀" : "☾";
+      themeLabel.textContent = isDark ? "Light mode" : "Dark mode";
+      themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+    }
+
+    function loadTheme() {
+      try {
+        applyTheme(localStorage.getItem(themeStorageKey) === "dark" ? "dark" : "light");
+      } catch (error) {
+        console.error("Unable to load theme from localStorage.", error);
+        applyTheme("light");
+      }
+    }
+
+    function toggleTheme() {
+      const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      applyTheme(nextTheme);
+      try {
+        localStorage.setItem(themeStorageKey, nextTheme);
+      } catch (error) {
+        console.error("Unable to save theme to localStorage.", error);
+      }
+    }
 
     function showCelebration() {
       const availableQuotes = motivationalQuotes.filter((quote) => quote !== previousQuote);
@@ -387,6 +506,7 @@
         text,
         completed: false
       });
+      saveTasks();
       renderTasks();
     }
 
@@ -397,6 +517,7 @@
       }
 
       task.completed = !task.completed;
+      saveTasks();
       renderTasks();
       if (task.completed) {
         showCelebration();
@@ -405,6 +526,7 @@
 
     function deleteTask(taskId) {
       tasks = tasks.filter((task) => task.id !== taskId);
+      saveTasks();
       renderTasks();
     }
 
@@ -422,12 +544,15 @@
     });
 
     continueButton.addEventListener("click", hideCelebration);
+    themeToggle.addEventListener("click", toggleTheme);
     celebration.addEventListener("click", (event) => {
       if (event.target === celebration) {
         hideCelebration();
       }
     });
 
+    loadTasks();
+    loadTheme();
     renderTasks();
   </script>
 </body>
