@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Focus List local recovery copies
+.focus-backups/
+tasks.json.bak
+.focus-*.tmp
