@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "508739b2-ecdd-4f3e-a342-63ec1ec94d1b",
+    "text": "zdar",
+    "completed": false,
+    "created_at": "2026-11-19T09:23:25",
+    "due_date": "2026-11-19",
+    "due_time": "09:24",
+    "completed_at": "",
+    "last_reminded_at": "",
+    "category": "Osobní",
+    "priority": "normal",
+    "notes": "",
+    "subtasks": [],
+    "repeat": "none",
+    "starred": false,
+    "repeat_from": "",
+    "repeat_day": 0,
+    "timer_end": "",
+    "timer_started_at": "",
+    "reminders_sent": [
+      "2026-11-19T09:24:00|hour",
+      "2026-11-19T09:24:00|due"
+    ]
+  }
+]

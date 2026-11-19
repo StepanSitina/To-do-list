@@ -151,14 +151,9 @@ class ToDoListApp(tk.Tk):
         super().__init__()
         self.withdraw()
         self.title(APP_NAME)
-        self.brand_icon = tk.PhotoImage(width=32, height=32)
-        self.brand_icon.put("#355D49", to=(0, 0, 32, 32))
-        for x in range(8, 14):
-            y = x+6
-            self.brand_icon.put("#FFFFFF", to=(x, y, x+2, y+3))
-        for x in range(14, 25):
-            y = 33-x
-            self.brand_icon.put("#FFFFFF", to=(x, y, x+2, y+3))
+        self.brand_icon_source = tk.PhotoImage(file=str(RESOURCE_DIRECTORY / "assets" / "logo.png"))
+        scale = max(1, self.brand_icon_source.width() // 32)
+        self.brand_icon = self.brand_icon_source.subsample(scale, scale)
         self.iconphoto(True, self.brand_icon)
         self.minsize(1060, 700)
         self.geometry("1280x830")
