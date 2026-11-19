@@ -2,6 +2,10 @@
 
 Desktopová aplikace pro Windows: úkoly, dílčí kroky, termíny, časovače a připomínky. Přehledný vzhled ve světlém i tmavém režimu.
 
+## Stažení pro Windows
+
+**[Stáhnout To-do list.exe](https://github.com/StepanSitina/To-do-list/releases/latest/download/To-do%20list.exe)**
+
 ## Spuštění
 
 Dvakrát klikni na **To-do list.exe**. Python ani další balíčky nepotřebuješ. EXE ponech ve složce, do které můžeš zapisovat.
@@ -66,4 +70,6 @@ python -m pip install pyinstaller
 python -m PyInstaller --noconfirm --onefile --windowed --name "To-do list" --icon assets/todo.ico --add-data "assets;assets" app.py
 ```
 
-`--data-dir CESTA` vybere jinou složku úkolů; `--background` spustí aplikaci přímo v liště. Soubor `index.html` v původním repozitáři je historická prohlížečová varianta. Aktuální desktopová aplikace je `To-do list.exe` / `app.py`.
+`--data-dir CESTA` vybere jinou složku úkolů; `--background` spustí aplikaci přímo v liště.
+
+Pro vydání na GitHubu nahraj soubor dist/To-do list.exe jako přílohu v části **Assets**. Ponech název souboru, aby fungoval odkaz v úvodu.
