@@ -36,7 +36,7 @@ def run_self_test(report):
             app = application.ToDoListApp(data, hidden=True, desktop=False)
             callbacks = []
             app.report_callback_exception = lambda *error: callbacks.append(str(error))
-            check(app.title() == "To-do list", "application_name")
+            check(app.title() == "To-do List", "application_name")
             check(app.state() == "withdrawn", "main_window_stays_hidden")
             app.quick.set("Ověřit ukládání úkolů")
             app.add_task()

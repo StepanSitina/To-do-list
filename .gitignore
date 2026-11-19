@@ -223,3 +223,6 @@ __marimo__/
 .focus-backups/
 tasks.json.bak
 .focus-*.tmp
+
+# Compiled executables
+*.exe

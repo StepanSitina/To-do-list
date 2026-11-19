@@ -12,7 +12,7 @@ from pathlib import Path
 import queue
 import threading
 
-APP_NAME = "To-do list"
+APP_NAME = "To-do List"
 APP_ID = "Stepan.ToDoList.Desktop"
 WM_TRAY = 0x8000 + 42
 WM_SHOW = 0x8000 + 43
@@ -161,7 +161,7 @@ class DesktopBridge:
     def _menu(self):
         menu = self.user.CreatePopupMenu()
         try:
-            self.user.AppendMenuW(menu, 0, 1, "Otevřít To-do list")
+            self.user.AppendMenuW(menu, 0, 1, f"Otevřít {APP_NAME}")
             self.user.AppendMenuW(menu, 8 if self.enabled else 0, 2, "Oznámení zapnuta")
             self.user.AppendMenuW(menu, 0x800, 0, None)
             self.user.AppendMenuW(menu, 0, 3, "Ukončit aplikaci")
@@ -268,6 +268,17 @@ class DesktopBridge:
 
 def set_app_identity():
     if os.name == "nt":
+        import winreg
+
+        # Windows uses this registration for the notification sender's name.
+        try:
+            with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER,
+                                    rf"Software\Classes\AppUserModelId\{APP_ID}",
+                                    access=winreg.KEY_SET_VALUE) as key:
+                winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, APP_NAME)
+        except OSError:
+            # Restricted registry access must not prevent the app from opening.
+            pass
         shell = ctypes.WinDLL("shell32")
         shell.SetCurrentProcessExplicitAppUserModelID.argtypes = [wt.LPCWSTR]
         shell.SetCurrentProcessExplicitAppUserModelID(APP_ID)

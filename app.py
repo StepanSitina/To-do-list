@@ -177,6 +177,7 @@ class ToDoListApp(tk.Tk):
         self.priority = tk.StringVar(value="Všechny priority")
         self.quick = tk.StringVar()
         self.quick_due = ""
+        self.quick_time = ""
         self.editor_job = None
         self.dirty = False
         self.editor_building = False
@@ -281,7 +282,7 @@ class ToDoListApp(tk.Tk):
         mark = tk.Canvas(brand, width=30, height=30, bg=p["green"], highlightthickness=0)
         mark.pack(side="left")
         draw_icon(mark, "check", 4, 3, p["paper"] if p is DARK else p["white"], 23, 2)
-        self.label(brand, "To-do list", size=15, bold=True).pack(side="left", padx=10)
+        self.label(brand, APP_NAME, size=15, bold=True).pack(side="left", padx=10)
         self.button(self.sidebar, "+   Nový úkol", self.focus_quick, primary=True).grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 25))
         self.nav = tk.Frame(self.sidebar, bg=p["side"])
         self.nav.grid(row=2, column=0, sticky="ew", padx=12)
@@ -412,6 +413,7 @@ class ToDoListApp(tk.Tk):
             self.quick_placeholder.place_forget()
         else:
             text = f"Přidat úkol · {self.pretty_due(self.quick_due)}…" if self.quick_due else "Přidat úkol…"
+            if self.quick_due and self.quick_time: text = text[:-1] + f" · {self.quick_time}…"
             self.quick_placeholder.configure(text=text)
             self.quick_placeholder.place(in_=self.quick_entry, x=2, y=0)
 
@@ -636,13 +638,13 @@ class ToDoListApp(tk.Tk):
         text = self.quick.get().strip()
         if not text: self.focus_quick(); return "break"
         if not self.save_editor(): return "break"
-        values = {"category": self.category or "Osobní", "due_date": self.quick_due}
+        values = {"category": self.category or "Osobní", "due_date": self.quick_due, "due_time": self.quick_time}
         if self.view == "today" and not self.quick_due: values["due_date"] = date.today().isoformat()
         if self.on_date and not self.quick_due: values["due_date"] = self.on_date
         if self.view == "important": values["starred"] = True
         task = self.safe(lambda: self.store.add(text, **values))
         if task:
-            self.quick.set(""); self.quick_due = ""
+            self.quick.set(""); self.quick_due = ""; self.quick_time = ""
             if self.view == "completed" or (self.view == "upcoming" and task.due_date <= date.today().isoformat()): self.view = "all"
             self.search.set(""); self.priority.set("Všechny priority")
             self.render_tasks()
@@ -779,7 +781,7 @@ class ToDoListApp(tk.Tk):
         due_row.pack(fill="x", pady=(5, 4))
         self.edit_date_entry = self.entry(due_row, self.edit_date, font_size=10)
         self.edit_date_entry.pack(side="left", fill="x", expand=True, ipady=8)
-        IconButton(due_row, self, "calendar", lambda: self.show_calendar(self.editor_pick_date), bg=p["panel"], tip="Vybrat datum").pack(side="right", padx=(5, 0))
+        IconButton(due_row, self, "calendar", lambda: self.show_calendar(self.editor_pick_date, initial_time=self.edit_time.get(), time_callback=self.edit_time.set), bg=p["panel"], tip="Vybrat datum").pack(side="right", padx=(5, 0))
         self.label(panel, "DD.MM.RRRR · nepovinné", size=8, color=p["faint"]).pack(anchor="w", pady=(0, 12))
         time_row = tk.Frame(panel, bg=p["panel"])
         time_row.pack(fill="x", pady=(0, 18))
@@ -787,7 +789,7 @@ class ToDoListApp(tk.Tk):
         self.edit_time_entry = self.entry(time_row, self.edit_time, font_size=10)
         self.edit_time_entry.configure(width=8)
         self.edit_time_entry.pack(side="right", ipady=5)
-        self.label(time_row, "24h · HH:MM", size=8, color=p["faint"]).pack(side="right", padx=8)
+        self.button(time_row, "Vybrat…", self.show_time_picker, small=True, color=p["green_text"]).pack(side="right", padx=8)
         timer_row = tk.Frame(panel, bg=p["panel"])
         timer_row.pack(fill="x", pady=(0, 18))
         self.button(timer_row, "Časovač…", self.show_timer, small=True, color=p["green_text"]).pack(side="left")
@@ -967,14 +969,18 @@ class ToDoListApp(tk.Tk):
         self.tip = None
 
     def quick_calendar(self):
-        self.show_calendar(self.set_quick_date)
+        self.show_calendar(self.set_quick_date, initial_time=self.quick_time, time_callback=self.set_quick_time)
 
     def set_quick_date(self, iso):
         self.quick_due = iso
         self.update_quick_placeholder()
         self.focus_quick()
 
-    def show_calendar(self, callback=None):
+    def set_quick_time(self, value):
+        self.quick_time = value
+        self.update_quick_placeholder()
+
+    def show_calendar(self, callback=None, *, initial_time="", time_callback=None):
         p = self.p
         dialog = tk.Toplevel(self)
         dialog.title("Vybrat datum" if callback else "Kalendář")
@@ -982,7 +988,9 @@ class ToDoListApp(tk.Tk):
         dialog.configure(bg=p["paper"])
         dialog.transient(self)
         dialog.grab_set()
-        dialog.geometry(f"340x445+{self.winfo_rootx()+max(20, (self.winfo_width()-340)//2)}+{self.winfo_rooty()+100}")
+        height = 525 if time_callback else 445
+        selected_time = tk.StringVar(dialog, value=initial_time)
+        dialog.geometry(f"340x{height}+{self.winfo_rootx()+max(20, (self.winfo_width()-340)//2)}+{self.winfo_rooty()+100}")
         month = [date.today().replace(day=1)]
         self.label(dialog, "Vybrat datum" if callback else "Úkoly podle data", font=("Georgia", 19)).pack(anchor="w", padx=25, pady=(23, 17))
         top = tk.Frame(dialog, bg=p["paper"]); top.pack(fill="x", padx=20)
@@ -992,6 +1000,7 @@ class ToDoListApp(tk.Tk):
             dialog.destroy()
             if callback: callback(iso)
             else: self.set_view("all", on_date=iso)
+            if time_callback: time_callback(selected_time.get() if iso else "")
         def change(delta):
             index = month[0].year*12+month[0].month-1+delta
             if not 1 <= index//12 <= 9999: return
@@ -1016,8 +1025,76 @@ class ToDoListApp(tk.Tk):
         self.button(bottom, "Dnes", lambda: choose(date.today().isoformat()), small=True, color=p["green_text"]).pack(side="left")
         self.button(bottom, "Zítra", lambda: choose((date.today()+timedelta(days=1)).isoformat()), small=True).pack(side="left")
         self.button(bottom, "Bez data" if callback else "Všechny úkoly", lambda: choose(""), small=True).pack(side="right")
+        if time_callback:
+            time_row = tk.Frame(dialog, bg=p["paper"])
+            time_row.pack(fill="x", padx=25, pady=(12, 0))
+            self.label(time_row, "ČAS", size=9, color=p["muted"]).pack(side="left")
+            time_button = self.button(time_row, selected_time.get() or "Vybrat čas…",
+                lambda: self.show_time_picker(selected_time.set, initial_time=selected_time.get(), parent=dialog),
+                small=True, color=p["green_text"])
+            time_button.pack(side="right")
+            selected_time.trace_add("write", lambda *_: time_button.configure(text=selected_time.get() or "Vybrat čas…"))
+            self.label(dialog, "Nastav čas a potom vyber den.", size=8, color=p["faint"]).pack(anchor="w", padx=25, pady=(4, 0))
         dialog.bind("<Escape>", lambda _: dialog.destroy())
 
+    def show_time_picker(self, callback=None, *, initial_time=None, parent=None):
+        """Choose a due time without leaving the task editor."""
+        p = self.p
+        try:
+            selected = datetime.strptime((self.edit_time.get() if initial_time is None else initial_time).strip(), "%H:%M")
+        except ValueError:
+            selected = datetime.now().replace(minute=0)
+        hour, minute = tk.IntVar(value=selected.hour), tk.IntVar(value=selected.minute)
+        dialog = tk.Toplevel(self)
+        dialog.title("Vybrat čas")
+        dialog.resizable(False, False)
+        dialog.configure(bg=p["paper"])
+        owner = parent or self
+        dialog.transient(owner)
+        dialog.grab_set()
+        dialog.geometry(f"340x370+{self.winfo_rootx()+max(20, (self.winfo_width()-340)//2)}+{self.winfo_rooty()+100}")
+        self.label(dialog, "Vybrat čas", font=("Georgia", 19)).pack(anchor="w", padx=25, pady=(23, 4))
+        self.label(dialog, "Kdy se chceš úkolu věnovat?", size=9, color=p["muted"]).pack(anchor="w", padx=25, pady=(0, 15))
+        controls = tk.Frame(dialog, bg=p["paper"])
+        controls.pack(pady=(0, 12))
+        def adjust(variable, delta, limit):
+            variable.set((variable.get() + delta) % limit)
+        for column, (variable, title, limit) in enumerate(((hour, "HODINY", 24), (minute, "MINUTY", 60))):
+            group = tk.Frame(controls, bg=p["paper"])
+            group.grid(row=0, column=column * 2, padx=10)
+            self.label(group, title, size=8, color=p["faint"]).pack()
+            self.button(group, "▲", lambda v=variable, n=limit: adjust(v, 1, n), small=True).pack()
+            value = self.label(group, f"{variable.get():02d}", font=("Georgia", 30), color=p["green_text"])
+            value.pack()
+            variable.trace_add("write", lambda *_, v=variable, label=value: label.configure(text=f"{v.get():02d}"))
+            self.button(group, "▼", lambda v=variable, n=limit: adjust(v, -1, n), small=True).pack()
+        self.label(controls, ":", font=("Georgia", 26), color=p["muted"]).grid(row=0, column=1)
+        presets = tk.Frame(dialog, bg=p["paper"])
+        presets.pack(pady=(0, 15))
+        def preset(h, m):
+            hour.set(h); minute.set(m)
+        for label, h, m in (("Ráno", 9, 0), ("Poledne", 12, 0), ("Večer", 18, 0)):
+            self.button(presets, label, lambda h=h, m=m: preset(h, m), small=True).pack(side="left", padx=3)
+        actions = tk.Frame(dialog, bg=p["paper"])
+        actions.pack(fill="x", padx=25)
+        def close():
+            dialog.destroy()
+            if parent and parent.winfo_exists():
+                parent.grab_set()
+                parent.focus_set()
+        dialog.protocol("WM_DELETE_WINDOW", close)
+        def apply(value):
+            if callback:
+                callback(value)
+            else:
+                if value and not self.edit_date.get().strip():
+                    self.editor_pick_date(date.today().isoformat())
+                self.edit_time.set(value)
+            close()
+        self.button(actions, "Bez času", lambda: apply(""), small=True).pack(side="left")
+        self.button(actions, "Použít čas", lambda: apply(f"{hour.get():02d}:{minute.get():02d}"), primary=True, small=True).pack(side="right")
+        dialog.bind("<Escape>", lambda _: close())
+        dialog.bind("<Return>", lambda _: apply(f"{hour.get():02d}:{minute.get():02d}"))
     def toggle_theme(self):
         if not self.save_editor(): return
         if self.safe(lambda: self.store.save_settings(theme="light" if self.p is DARK else "dark"), success=True): self._build()
